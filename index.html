@@ -270,50 +270,60 @@ let correcta;
 
 function nuevaPregunta(){
 
-    let base = Math.floor(Math.random()*60)+20; // 20 a 80
-    let constante = Math.floor(Math.random()*7)+3; // 3 a 9
+    let tipo = Math.floor(Math.random()*5);
+    let base, constante, correcta, texto;
 
-    let tipoRandom = Math.random();
-    let texto = "";
-    
-    // 3 tipos de ejercicios
-    if(tipoRandom < 0.4){
-        // SUMA
-        correcta = base + constante;
-        texto = `${base} + ${constante} = ?`;
+    base = Math.floor(Math.random()*50)+10;
+    constante = Math.floor(Math.random()*9)+2;
 
-    } else if(tipoRandom < 0.8){
-        // RESTA
-        correcta = base - constante;
-        texto = `${base} - ${constante} = ?`;
+    if(tipo === 0){
+        // RELACIÓN INVERSA
+        correcta = base;
+        texto = `Si ${base} + ${constante} = ${base+constante}, entonces ${base+constante} - ${constante} = ?`;
+
+    } else if(tipo === 1){
+        // SUCESIÓN
+        let n1 = base;
+        let n2 = n1 + constante;
+        let n3 = n2 + constante;
+        correcta = n3 + constante;
+
+        texto = `¿Qué sigue? ${n1}, ${n2}, ${n3}, ___`;
+
+    } else if(tipo === 2){
+        // ECUACIÓN
+        correcta = base;
+        texto = `Si x + ${constante} = ${base+constante}, ¿cuánto vale x?`;
+
+    } else if(tipo === 3){
+        // CONSTANTE
+        correcta = (Math.random() > 0.5 ? "+" : "-") + constante;
+        let n1 = base;
+        let n2 = correcta[0] === "+" ? base + constante : base - constante;
+
+        texto = `En la serie ${n1}, ${n2}... ¿cuál es la constante?`;
 
     } else {
-        // RELACIÓN (clave educativa)
+        // OPERACIÓN COMPUESTA
         correcta = base;
-        texto = `(${base} + ${constante}) - ${constante} = ?`;
+        texto = `Si a ${base} le sumas ${constante} y luego le restas ${constante}, ¿qué queda?`;
     }
 
     document.getElementById("question").innerText = texto;
 
     let opciones = [correcta];
 
-    // respuestas incorrectas más inteligentes
     while(opciones.length < 3){
 
-        let errorTipo = Math.floor(Math.random()*3);
         let falsa;
+        let tipoError = Math.floor(Math.random()*3);
 
-        if(errorTipo === 0){
-            // error común: sumar en vez de restar
+        if(tipoError === 0){
             falsa = base + constante;
-        } 
-        else if(errorTipo === 1){
-            // error común: restar mal
+        } else if(tipoError === 1){
             falsa = base - constante;
-        } 
-        else {
-            // variación cercana
-            falsa = correcta + (Math.floor(Math.random()*5)-2)*2;
+        } else {
+            falsa = correcta + (Math.floor(Math.random()*10)-5);
         }
 
         if(!opciones.includes(falsa)){
@@ -332,8 +342,8 @@ function nuevaPregunta(){
         btn.innerText = num;
 
         btn.onclick = ()=>{
-            beep(num===correcta?900:200);
-            tiro(num===correcta);
+            beep(num==correcta?900:200);
+            tiro(num==correcta);
             setTimeout(nuevaPregunta,1200);
         };
 
