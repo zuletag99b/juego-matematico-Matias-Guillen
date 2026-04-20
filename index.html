@@ -8,7 +8,372 @@
 <style>
 body {
     margin: 0;
+    font-family: 'Arial';<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Boliche Matemático PRO MAX</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
     font-family: 'Arial';
+    background: linear-gradient(270deg, #ff6ec4, #7873f5, #42e695);
+    background-size: 600% 600%;
+    animation: fondo 10s ease infinite;
+    overflow: hidden;
+}
+
+@keyframes fondo {
+    0%{background-position:0% 50%}
+    50%{background-position:100% 50%}
+    100%{background-position:0% 50%}
+}
+
+/* PANTALLA INICIO */
+#inicio {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    text-align: center;
+    padding: 20px;
+}
+
+#inicio h1 {
+    font-size: 35px;
+}
+
+#inicio p {
+    max-width: 400px;
+    font-size: 18px;
+}
+
+.play-btn {
+    margin-top: 20px;
+    padding: 15px 30px;
+    font-size: 22px;
+    border-radius: 15px;
+    border: none;
+    background: #00f2fe;
+    color: black;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.play-btn:hover {
+    transform: scale(1.1);
+}
+
+/* UI */
+#ui {
+    position: absolute;
+    top: 10px;
+    width: 100%;
+    text-align: center;
+    color: white;
+    z-index: 10;
+}
+
+#card {
+    display: inline-block;
+    background: rgba(0,0,0,0.6);
+    padding: 15px 25px;
+    border-radius: 20px;
+}
+
+#question {
+    font-size: 32px;
+    margin: 10px;
+}
+
+#score {
+    font-size: 22px;
+}
+
+/* botones */
+#answers {
+    position: absolute;
+    bottom: 20px;
+    width: 100%;
+    text-align: center;
+}
+
+.btn {
+    display: inline-block;
+    margin: 10px;
+    padding: 18px 28px;
+    font-size: 26px;
+    border-radius: 20px;
+    background: linear-gradient(45deg,#ffdd00,#ff8800);
+    cursor: pointer;
+}
+
+.btn:hover {
+    transform: scale(1.1);
+}
+
+/* mensaje */
+#mensaje {
+    position: absolute;
+    top: 45%;
+    width: 100%;
+    text-align: center;
+    font-size: 40px;
+    font-weight: bold;
+    z-index: 20;
+}
+
+canvas { display:block; }
+</style>
+</head>
+
+<body>
+
+<!-- PANTALLA INICIO -->
+<div id="inicio">
+    <h1>🎳 Boliche Matemático</h1>
+    <p>
+        Aprende la relación entre sumas y restas con un valor constante.  
+        Resuelve patrones, ecuaciones y secuencias mientras juegas boliche.
+    </p>
+    <p><b>Autor:</b> Matías Josué Guillén Zuleta</p>
+    <button class="play-btn" onclick="iniciarJuego()">▶️ Jugar</button>
+</div>
+
+<div id="ui">
+    <div id="card">
+        <div id="score">⭐ Puntos: 0</div>
+        <div id="question"></div>
+        <div>🎯 Encuentra el patrón</div>
+    </div>
+</div>
+
+<div id="mensaje"></div>
+<div id="answers"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+
+<script>
+
+// INICIAR JUEGO
+function iniciarJuego(){
+    document.getElementById("inicio").style.display = "none";
+    nuevaPregunta();
+}
+
+// ESCENA
+let scene = new THREE.Scene();
+let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+let renderer = new THREE.WebGLRenderer({antialias:true});
+
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// LUZ
+let light = new THREE.PointLight(0xffffff, 2);
+light.position.set(0,10,5);
+scene.add(light);
+
+// PISO
+let floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(30,30),
+    new THREE.MeshStandardMaterial({ color: 0x222222 })
+);
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+
+// BOLA
+let player = new THREE.Mesh(
+    new THREE.SphereGeometry(0.8, 32, 32),
+    new THREE.MeshStandardMaterial({
+        color: 0xff00ff,
+        emissive: 0x550055
+    })
+);
+player.position.y = 0.8;
+scene.add(player);
+
+// CÁMARA
+camera.position.set(0,6,8);
+camera.lookAt(0,0,0);
+
+// BOLOS
+let pins = [];
+
+function crearBolos(){
+    pins.forEach(p => scene.remove(p));
+    pins = [];
+
+    let colores = [0xff0000,0x00ff00,0x0000ff];
+
+    [-1,0,1].forEach((x,i)=>{
+        let pin = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.2, 0.3, 1.5, 32),
+            new THREE.MeshStandardMaterial({ color: colores[i] })
+        );
+
+        pin.position.set(x, 0.75, -6);
+        scene.add(pin);
+        pins.push(pin);
+    });
+}
+crearBolos();
+
+// SONIDO
+function beep(freq){
+    let ctx = new (window.AudioContext || window.webkitAudioContext)();
+    let osc = ctx.createOscillator();
+    osc.frequency.value = freq;
+    osc.connect(ctx.destination);
+    osc.start();
+    setTimeout(()=>osc.stop(),200);
+}
+
+// MENSAJE
+function mensaje(texto, color){
+    let m = document.getElementById("mensaje");
+    m.innerText = texto;
+    m.style.color = color;
+    setTimeout(()=> m.innerText="",1200);
+}
+
+// CHUZA
+function chuza(){
+    pins.forEach((pin,i)=>{
+        let dir = (i-1)*0.4;
+
+        let t=0;
+        let anim=setInterval(()=>{
+            t+=0.1;
+            pin.rotation.z +=0.4;
+            pin.position.x += dir;
+            pin.position.z +=0.4;
+            if(t>1) clearInterval(anim);
+        },30);
+    });
+}
+
+// TIRO
+function tiro(correcto){
+    let t=0;
+
+    let anim=setInterval(()=>{
+        t+=0.05;
+        player.position.z = -6*t;
+
+        if(!correcto) player.position.x=2;
+
+        if(t>=1){
+            clearInterval(anim);
+
+            if(correcto){
+                chuza();
+                mensaje("🎳 CHUZAAAA 🔥","lime");
+                puntos++;
+            }else{
+                mensaje("❌ Intenta otra vez","red");
+            }
+
+            document.getElementById("score").innerText="⭐ Puntos: "+puntos;
+
+            setTimeout(()=>{
+                player.position.set(0,0.8,0);
+                crearBolos();
+            },800);
+        }
+    },20);
+}
+
+// LÓGICA EDUCATIVA
+let puntos=0;
+let correcta;
+
+function nuevaPregunta(){
+
+    let tipo = Math.floor(Math.random()*5);
+    let base = Math.floor(Math.random()*50)+10;
+    let constante = Math.floor(Math.random()*9)+2;
+    let texto;
+
+    if(tipo === 0){
+        correcta = base;
+        texto = `Si ${base} + ${constante} = ${base+constante}, entonces ${base+constante} - ${constante} = ?`;
+
+    } else if(tipo === 1){
+        let n1 = base;
+        let n2 = n1 + constante;
+        let n3 = n2 + constante;
+        correcta = n3 + constante;
+        texto = `¿Qué sigue? ${n1}, ${n2}, ${n3}, ___`;
+
+    } else if(tipo === 2){
+        correcta = base;
+        texto = `Si x + ${constante} = ${base+constante}, ¿cuánto vale x?`;
+
+    } else if(tipo === 3){
+        correcta = (Math.random()>0.5?"+":"-")+constante;
+        let n2 = correcta[0]==="+"? base+constante : base-constante;
+        texto = `En la serie ${base}, ${n2}... ¿cuál es la constante?`;
+
+    } else {
+        correcta = base;
+        texto = `Si a ${base} le sumas ${constante} y luego le restas ${constante}, ¿qué queda?`;
+    }
+
+    document.getElementById("question").innerText = texto;
+
+    let opciones=[correcta];
+
+    while(opciones.length<3){
+        let falsa = correcta + (Math.floor(Math.random()*10)-5);
+        if(!opciones.includes(falsa)) opciones.push(falsa);
+    }
+
+    opciones.sort(()=>Math.random()-0.5);
+
+    let cont=document.getElementById("answers");
+    cont.innerHTML="";
+
+    opciones.forEach(num=>{
+        let btn=document.createElement("div");
+        btn.className="btn";
+        btn.innerText=num;
+
+        btn.onclick=()=>{
+            beep(num==correcta?900:200);
+            tiro(num==correcta);
+            setTimeout(nuevaPregunta,1200);
+        };
+
+        cont.appendChild(btn);
+    });
+}
+
+// RENDER
+function animate(){
+    requestAnimationFrame(animate);
+    renderer.render(scene,camera);
+}
+animate();
+
+// RESPONSIVE
+window.addEventListener("resize",()=>{
+    camera.aspect=window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+
+</body>
+</html>
     background: linear-gradient(270deg, #ff6ec4, #7873f5, #42e695);
     background-size: 600% 600%;
     animation: fondo 10s ease infinite;
